@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Random Quote Visualizer" />
+    <title>Random Quote Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+      html, body, #root { height: 100%; }
+      body { margin: 0; padding: 0; }
+      .bg-video {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        object-fit: cover;
+        z-index: 0;
+      }
+      .bg-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(20, 20, 30, 0.55);
+        z-index: 1;
+        pointer-events: none;
+      }
+      #root { position: relative; z-index: 2; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html> 
