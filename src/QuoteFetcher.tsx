@@ -26,6 +26,18 @@ const fallbackQuotes: Quote[] = [
   {
     content: "Design is not just what it looks like and feels like. Design is how it works.",
     author: "Steve Jobs"
+  },
+  {
+    content: "The future belongs to those who believe in the beauty of their dreams.",
+    author: "Eleanor Roosevelt"
+  },
+  {
+    content: "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+    author: "Winston Churchill"
+  },
+  {
+    content: "The best way to predict the future is to invent it.",
+    author: "Alan Kay"
   }
 ];
 
@@ -41,27 +53,68 @@ const QuoteFetcher: React.FC<QuoteFetcherProps> = ({
   const [quote, setQuote] = useState<Quote>(fallbackQuotes[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const fetchQuote = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Using Quotable API which is CORS-friendly
-      const response = await fetch('https://api.quotable.io/random');
-      if (!response.ok) {
-        throw new Error('Failed to fetch quote');
+      // Try multiple APIs in sequence
+      const apis = [
+        'https://api.quotable.io/random',
+        'https://api.quotable.io/quotes/random',
+        'https://api.quotable.io/quotes'
+      ];
+
+      let response = null;
+      let data = null;
+
+      // Try each API until one works
+      for (const api of apis) {
+        try {
+          response = await fetch(api);
+          if (response.ok) {
+            data = await response.json();
+            break;
+          }
+        } catch (e) {
+          console.log(`Failed to fetch from ${api}, trying next...`);
+          continue;
+        }
       }
-      const data = await response.json();
-      setQuote({
-        content: data.content,
-        author: data.author
-      });
+
+      if (!data) {
+        throw new Error('All APIs failed');
+      }
+
+      // Handle different API response formats
+      let quoteData: Quote;
+      if (Array.isArray(data)) {
+        // Handle array response
+        const randomQuote = data[Math.floor(Math.random() * data.length)];
+        quoteData = {
+          content: randomQuote.content || randomQuote.text,
+          author: randomQuote.author
+        };
+      } else {
+        // Handle single quote response
+        quoteData = {
+          content: data.content || data.text,
+          author: data.author
+        };
+      }
+
+      setQuote(quoteData);
+      setRetryCount(0); // Reset retry count on success
     } catch (err) {
       console.error('Error fetching quote:', err);
-      setError('Failed to fetch quote');
+      setError('Failed to fetch quote. Using fallback quotes.');
       // Use a random fallback quote
       const randomIndex = Math.floor(Math.random() * fallbackQuotes.length);
       setQuote(fallbackQuotes[randomIndex]);
+      
+      // Increment retry count
+      setRetryCount(prev => prev + 1);
     } finally {
       setLoading(false);
     }
@@ -69,9 +122,11 @@ const QuoteFetcher: React.FC<QuoteFetcherProps> = ({
 
   useEffect(() => {
     fetchQuote();
-    const timer = setInterval(fetchQuote, interval);
+    // Adjust interval based on retry count to prevent too many requests
+    const adjustedInterval = retryCount > 3 ? interval * 2 : interval;
+    const timer = setInterval(fetchQuote, adjustedInterval);
     return () => clearInterval(timer);
-  }, [interval]);
+  }, [interval, retryCount]);
 
   const refresh = () => {
     fetchQuote();
