@@ -59,52 +59,16 @@ const QuoteFetcher: React.FC<QuoteFetcherProps> = ({
     setLoading(true);
     setError(null);
     try {
-      // Try multiple APIs in sequence
-      const apis = [
-        'https://api.quotable.io/random',
-        'https://api.quotable.io/quotes/random',
-        'https://api.quotable.io/quotes'
-      ];
-
-      let response = null;
-      let data = null;
-
-      // Try each API until one works
-      for (const api of apis) {
-        try {
-          response = await fetch(api);
-          if (response.ok) {
-            data = await response.json();
-            break;
-          }
-        } catch (e) {
-          console.log(`Failed to fetch from ${api}, trying next...`);
-          continue;
-        }
+      // Using a CORS proxy to avoid certificate issues
+      const response = await fetch('https://cors-anywhere.herokuapp.com/http://api.quotable.io/random');
+      if (!response.ok) {
+        throw new Error('Failed to fetch quote');
       }
-
-      if (!data) {
-        throw new Error('All APIs failed');
-      }
-
-      // Handle different API response formats
-      let quoteData: Quote;
-      if (Array.isArray(data)) {
-        // Handle array response
-        const randomQuote = data[Math.floor(Math.random() * data.length)];
-        quoteData = {
-          content: randomQuote.content || randomQuote.text,
-          author: randomQuote.author
-        };
-      } else {
-        // Handle single quote response
-        quoteData = {
-          content: data.content || data.text,
-          author: data.author
-        };
-      }
-
-      setQuote(quoteData);
+      const data = await response.json();
+      setQuote({
+        content: data.content,
+        author: data.author
+      });
       setRetryCount(0); // Reset retry count on success
     } catch (err) {
       console.error('Error fetching quote:', err);
